@@ -2,13 +2,12 @@ from fastapi import FastAPI, HTTPException
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 from db import create_all_tables, SessionDep
 
-app = FastAPI(lifespan=create_all_tables)
+# --------- API ---------
+app = FastAPI()
 
-@app.get("/check-db")
-def check_db(session: SessionDep):
-    result = session.exec(select()).first()
-    return {"db statuts":result}
-
+@app.on_event("startup")
+def on_startup():
+    create_all_tables()
 
 # --------- MODELOS ---------
 class Task(SQLModel, table=True):
@@ -26,17 +25,6 @@ engine = create_engine(sqlite_url, echo=True)
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
-# --------- API ---------
-app = FastAPI()
-
-@app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
-
-# --------- CRUD TASK ---------
-@app.on_event("startup")
-def on_startup():
-    create_all_tables()
 
 # --------- ENDPOINTS DE TASK ---------
 @app.post("/tasks/", response_model=Task)
