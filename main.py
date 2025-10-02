@@ -16,16 +16,6 @@ class Task(SQLModel, table=True):
     description: str | None = None
     completed: bool = Field(default=False)
 
-# --------- CONFIG DB ---------
-sqlite_file_name = "database.db"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
-
-engine = create_engine(sqlite_url, echo=True)
-
-def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
-
-
 # --------- ENDPOINTS DE TASK ---------
 @app.post("/tasks/", response_model=Task)
 def create_task(task: Task, session: SessionDep):
