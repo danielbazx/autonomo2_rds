@@ -10,19 +10,19 @@ def on_startup():
     create_all_tables()
 
 # --------- MODELOS ---------
-class Task(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
+class TaskCreate(SQLModel):
     title: str
     description: str | None = None
     completed: bool = Field(default=False)
 
 # --------- ENDPOINTS DE TASK ---------
 @app.post("/tasks/", response_model=Task)
-def create_task(task: Task, session: SessionDep):
-    session.add(task)
+def create_task(task: TaskCreate, session: SessionDep):
+    new_task = Task(**task.dict())
+    session.add(new_task)
     session.commit()
-    session.refresh(task)
-    return task
+    session.refresh(new_task)
+    return new_task
 
 @app.get("/tasks/", response_model=list[Task])
 def read_tasks(session: SessionDep):
