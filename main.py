@@ -24,6 +24,12 @@ class Book(SQLModel, table=True):
     year: int
     owner_id: int | None = Field(default=None, foreign_key="user.id")
 
+class Task(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    title: str
+    description: str | None = None
+    completed: bool = Field(default=False)
+
 # --------- CONFIG DB ---------
 sqlite_file_name = "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
@@ -40,65 +46,49 @@ app = FastAPI()
 def on_startup():
     create_db_and_tables()
 
-# --------- CRUD USER ---------
-@app.post("/users/")
-def create_user(user: User):
-    with Session(engine) as session:
-        session.add(user)
-        session.commit()
-        session.refresh(user)
-        return user
+# --------- CRUD TASK ---------
+@app.on_event("startup")
+def on_startup():
+    create_all_tables()
 
-@app.get("/users/")
-def read_users():
-    with Session(engine) as session:
-        users = session.exec(select(User)).all()
-        return users
+# --------- ENDPOINTS DE TASK ---------
+@app.post("/tasks/", response_model=Task)
+def create_task(task: Task, session: SessionDep):
+    session.add(task)
+    session.commit()
+    session.refresh(task)
+    return task
 
-@app.get("/users/{user_id}")
-def read_user(user_id: int):
-    with Session(engine) as session:
-        user = session.get(User, user_id)
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        return user
+@app.get("/tasks/", response_model=list[Task])
+def read_tasks(session: SessionDep):
+    tasks = session.exec(select(Task)).all()
+    return tasks
 
-@app.put("/users/{user_id}")
-def update_user(user_id: int, updated_user: User):
-    with Session(engine) as session:
-        db_user = session.get(User, user_id)
-        if not db_user:
-            raise HTTPException(status_code=404, detail="User not found")
-        db_user.name = updated_user.name
-        db_user.email = updated_user.email
-        db_user.is_active = updated_user.is_active
-        session.add(db_user)
-        session.commit()
-        session.refresh(db_user)
-        return db_user
+@app.get("/tasks/{task_id}", response_model=Task)
+def read_task(task_id: int, session: SessionDep):
+    task = session.get(Task, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
 
-@app.delete("/users/{user_id}")
-def delete_user(user_id: int):
-    with Session(engine) as session:
-        user = session.get(User, user_id)
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        session.delete(user)
-        session.commit()
-        return {"ok": True}
+@app.put("/tasks/{task_id}", response_model=Task)
+def update_task(task_id: int, updated_task: Task, session: SessionDep):
+    db_task = session.get(Task, task_id)
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    db_task.title = updated_task.title
+    db_task.description = updated_task.description
+    db_task.completed = updated_task.completed
+    session.add(db_task)
+    session.commit()
+    session.refresh(db_task)
+    return db_task
 
-# --------- CRUD BOOK ---------
-@app.post("/books/")
-def create_book(book: Book):
-    with Session(engine) as session:
-        session.add(book)
-        session.commit()
-        session.refresh(book)
-        return book
-
-@app.get("/books/")
-def read_books():
-    with Session(engine) as session:
-        books = session.exec(select(Book)).all()
-        return books
-
+@app.delete("/tasks/{task_id}")
+def delete_task(task_id: int, session: SessionDep):
+    task = session.get(Task, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    session.delete(task)
+    session.commit()
+    return {"ok": True}
