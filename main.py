@@ -11,19 +11,6 @@ def check_db(session: SessionDep):
 
 
 # --------- MODELOS ---------
-class User(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    name: str
-    email: str
-    is_active: bool = True
-
-class Book(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    title: str
-    author: str
-    year: int
-    owner_id: int | None = Field(default=None, foreign_key="user.id")
-
 class Task(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     title: str
